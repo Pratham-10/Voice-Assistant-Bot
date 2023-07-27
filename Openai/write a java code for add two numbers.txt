@@ -1,0 +1,27 @@
+OpenAI response for Prompt: using artificial intelligence write a java code for add two numbers 
+ *************************
+
+
+
+import java.util.Scanner;
+ 
+public class AddNumbers {
+ 
+   public static void main(String[] args) {
+      int num1;
+      int num2;
+      int sum;
+ 
+      Scanner scanner = new Scanner(System.in);
+      System.out.println("Enter first number:");
+ 
+      // This method reads the number provided using keyboard
+      num1 = scanner.nextInt();
+      System.out.println("Enter second number:");
+      num2 = scanner.nextInt();
+      scanner.close();
+      // Calculating the sum of two numbers
+      sum = num1 + num2;
+      System.out.println("Sum of these numbers: "+sum);
+   }
+}
