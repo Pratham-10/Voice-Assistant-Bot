@@ -1,0 +1,7 @@
+google-genai
+requests
+SpeechRecognition>=3.10.0
+pyautogui
+python-dotenv
+pyttsx3
+pyaudio
