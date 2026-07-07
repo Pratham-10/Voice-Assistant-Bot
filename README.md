@@ -1,121 +1,99 @@
-# Voice Assistant Bot 🎙️
+# Autonomous AI Voice Agent
 
-A modernized, modular, and cross-platform desktop voice assistant written in Python. It supports speech-to-text input, system text-to-speech output, weather forecast checks, custom website launching, keyboard media controls, and AI-driven chat/generation features using the Google Gemini API.
+An event-driven, cross-platform voice assistant built as an autonomous AI agent using Gemini function-calling orchestration. The system processes natural language queries to control local environments and remote APIs, utilizing a thread-safe state machine to coordinate audio, background workers, and external integrations.
 
-## Features & Enhancements ✨
+## Architecture & System Design
 
-- **Cross-Platform Compatibility**: Fully compatible with macOS, Windows, and Linux.
-  - *macOS*: Runs speech synthesis natively using the built-in `say` command (extremely fast, offline, and bypasses buggy `pyttsx3`/`pyobjc` builds on modern macOS).
-  - *Windows*: Utilizes local SAPI5 synthesis via `pyttsx3` with an automated COM dispatch backup.
-  - *Linux*: Falls back to `espeak` via `pyttsx3`.
-- **Gemini API Integration**: Uses the official Google GenAI Python SDK (`google-genai`) with the `gemini-2.5-flash` model for super-fast, intelligent response times.
-- **Environment Configurations**: Implemented standard `.env` configuration files for API keys instead of exposing them in python modules.
-- **Fail-Safe Robustness**:
-  - Automatically falls back to terminal keyboard input if a microphone is not found or `PyAudio` is not installed.
-  - Wraps active application-level GUI keystrokes (`pyautogui`) to avoid accessibility permission crashes on macOS.
-- **Modular Directory Structure**: Refactored the code from a single large script into clean, reusable modules.
+The system is built on a modular, agentic architecture:
+
+* **Speech Processing**: Audio capture is handled via PyAudio and SpeechRecognition, configured with optimized silence thresholds. Text-to-speech runs via native subprocesses on macOS (utilizing the `say` command for low-latency offline synthesis) and COM-based SAPI5/espeak wrappers on Windows/Linux.
+* **Autonomous Agent Orchestrator**: Powered by `gemini-2.5-flash` using function-calling. Natural language queries are mapped dynamically to registered Python tools, avoiding legacy regex/substring routing.
+* **Asynchronous Coordinator & State Machine**: A thread-safe state machine (`State`) manages the assistant's runtime state (`IDLE`, `LISTENING`, `THINKING`, `SPEAKING`).
+* **State-Aware Background Reminders**: A SQLite-backed background worker monitors pending reminders. To prevent audio collisions, the background thread queries the state machine: if the assistant is not `IDLE`, reminders bypass TTS and are routed to macOS notification banners and stdout.
 
 ---
 
-## Directory Structure 📁
+## Agentic Capabilities & Features
 
-```
-.
-├── .env.example       # Environment configuration template
-├── .gitignore         # File patterns to exclude from Git tracking
-├── README.md          # User manual and setup documentation
-├── requirements.txt   # Pip dependencies list
-├── main.py            # Main runner file
-└── src/
-    ├── __init__.py    # Defines src as a package
-    ├── config.py      # Dotenv configuration loading
-    ├── tts.py         # Text-to-speech speak functions
-    ├── stt.py         # Speech-to-text takeCommand functions
-    ├── actions.py     # Weather, music play, and keyboard simulation actions
-    └── ai.py          # Gemini AI chat and generation functions
-```
+* **Autonomous Tool Selection & Execution (Function-Calling)**: Dynamically reasons about user intent to choose and execute the correct tools (Google Calendar, Spotify, Gmail, Web Search) from a registered functional schema, including resolving relative date/time arguments (e.g., "tomorrow at 4pm") based on current local context.
+* **Cross-App Integration & Fallback Routing**: Bridges multiple APIs. For example, music playback queries initiate Spotify Web API commands and dynamically fall back to browser-based YouTube streaming via DuckDuckGo search if endpoints are unavailable or unconfigured.
+* **Google OAuth 2.0 Integration**: Supports secure, desktop-initiated OAuth flows for Google Calendar (complete CRUD with automatic primary timezone synchronization) and Gmail.
+* **Asynchronous Background Processing**: A SQLite-powered background daemon runs reminders in a separate thread, implementing a state-aware callback to prevent interrupting active voice synthesis or capture.
+* **DuckDuckGo Web Search Integration**: Real-time web queries using `ddgs` to retrieve snippets for current events.
 
 ---
 
-## Installation & Setup 🚀
+## Installation
 
-### 1. Install System Prerequisites
+### Prerequisites
 
-Depending on your Operating System, speech recognition may require installing system audio headers (`portaudio`).
+#### System Dependencies (PortAudio)
+Speech recognition requires system-level audio headers.
 
-- **macOS**:
-  Install Xcode command line tools and Homebrew, then run:
+* **macOS**:
   ```bash
   brew install portaudio
   ```
-- **Linux (Ubuntu/Debian)**:
+* **Linux (Ubuntu/Debian)**:
   ```bash
-  sudo apt-get update
-  sudo apt-get install portaudio19-dev python3-pyaudio espeak
+  sudo apt-get update && sudo apt-get install portaudio19-dev python3-pyaudio espeak
   ```
-- **Windows**:
-  No system dependencies are usually required.
+* **Windows**:
+  No additional system dependencies are required.
 
----
+### Setup
 
-### 2. Configure Virtual Environment
-
-It is recommended to run the project in a virtual environment to prevent polluting system packages.
-
-```bash
-# Create a virtual environment
-python3 -m venv .venv
-
-# Activate the virtual environment
-# On macOS and Linux:
-source .venv/bin/activate
-
-# On Windows (cmd):
-.venv\Scripts\activate.bat
-
-# On Windows (PowerShell):
-.venv\Scripts\Activate.ps1
-```
-
----
-
-### 3. Install Dependencies
-
-Install the requirements using pip:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### 4. Environment Variables Setup
-
-1. Copy the `.env.example` file to `.env`:
+1. **Clone and Initialize Environment**:
    ```bash
-   cp .env.example .env
+   git clone
+   cd Voice-Assistant-Bot
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
    ```
-2. Open `.env` and fill in your keys:
-   - `GEMINI_API_KEY`: Get one from [Google AI Studio](https://aistudio.google.com/).
-   - `WEATHER_API_KEY`: Get a free key from [OpenWeatherMap](https://openweathermap.org/api).
-   - `MUSIC_PATH`: Absolute path to a local audio file (e.g. `/Users/username/Music/song.mp3` or `C:\Users\username\Music\song.mp3`).
+
+2. **Configure Environment Variables**:
+   Create a `.env` file in the root directory (see `.env.example`):
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key
+   WEATHER_API_KEY=your_openweathermap_api_key
+   SPOTIPY_CLIENT_ID=your_spotify_client_id
+   SPOTIPY_CLIENT_SECRET=your_spotify_client_secret
+   SPOTIPY_REDIRECT_URI=http://127.0.0.1:8888/callback
+   GOOGLE_CREDENTIALS_PATH=your-credential-json path
+   ```
+
+3. **Google API Setup**:
+   * Create a project in the [Google Cloud Console](https://console.cloud.google.com/).
+   * Enable the **Google Calendar API** and **Gmail API**.
+   * Configure the OAuth Consent Screen (Internal/External) and add your email to **Test Users**.
+   * Under **Credentials**, create an **OAuth Client ID** for a **Desktop Application**.
+   * Download the JSON credentials file, rename it to `credentials.json`, and place it in the root directory.
+   * On first run, follow the browser-based OAuth flow to authorize access. The credentials will be cached in `token.json`.
 
 ---
 
-## Usage 💻
+## Running the Application
 
-Run the assistant from the root directory:
-
+Start the main loop:
 ```bash
-python main.py
+python3 main.py
 ```
 
-### Voice Commands
+### Voice Commands Examples
+* **Calendar Management**: 
+  - *"Schedule a meeting tomorrow at 4:00 PM for 30 minutes"*
+  - *"What meetings do I have scheduled?"*
+  - *"Reschedule Code Review to next Monday at 2:00 PM"*
+* **Communication**: *"Send an email to user@example.com with subject Hi"*
+* **Reminders**: *"Set a reminder in two minutes to drink water"*
+* **System/Music Control**: *"Play Blinding Lights"* or *"Pause the music"*
 
-- **Open Website**: Say `"Open Youtube"`, `"Open Google"`, `"Open Stackoverflow"`, or `"Open GeeksforGeeks"`.
-- **Tell Time**: Say `"Time"` or `"What time is it"`.
-- **Check Weather**: Say `"Weather in Mumbai"` or `"Weather in Jaipur"`. If you just say `"Weather"`, the assistant will prompt you for the city.
-- **AI File Generation**: Say `"Using artificial intelligence write a python script to solve sudoku"` (requires `GEMINI_API_KEY`). This splits on `"intelligence"`, requests a code block, and saves the output as `Openai/write_a_python_script_to_solve_sudoku.txt`.
-- **Enable Gemini Chat**: Say `"Enable chatting"`. You will enter a dedicated chatting mode. Say `"Quit chatting"` to exit back to the main loop.
-- **Play Music**: Say `"Open music"`. It opens your default player with your configured `MUSIC_PATH`. While playing, you can say `"pause"`, `"play"`, `"next"`, or `"previous"` to control playback, and `"stop"` to exit back to the main assistant loop.
-- **Exit Assistant**: Say `"Quit"` or `"Exit"`.
+---
+
+## Testing
+
+Run the automated test suite verifying the registered tools, Spotify fallbacks, and Calendar CRUD mock interactions:
+```bash
+python3 -m unittest tests/test_tools.py
+```

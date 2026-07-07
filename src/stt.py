@@ -15,14 +15,20 @@ def takeCommand():
         return query if query.strip() else "None"
 
     r = sr.Recognizer()
+    r.pause_threshold = 2.0
+    r.non_speaking_duration = 1.0
+    r.dynamic_energy_threshold = True
+    
+    from src.state import set_state, State
+    
     try:
         with sr.Microphone() as source:
             print("Listening...")
-            r.pause_threshold = 1
+            set_state(State.LISTENING)
             # Adjust for ambient noise briefly to improve recognition
-            r.adjust_for_ambient_noise(source, duration=0.5)
+            r.adjust_for_ambient_noise(source, duration=1.0)
             # Listen with timeouts to prevent hanging indefinitely
-            audio = r.listen(source, timeout=5, phrase_time_limit=10)
+            audio = r.listen(source, timeout=8, phrase_time_limit=15)
     except sr.WaitTimeoutError:
         print("Listening timed out. No speech detected.")
         return "None"
@@ -30,6 +36,8 @@ def takeCommand():
         print(f"\n[STT Info] Microphone access failed: {e}")
         query = input("User (keyboard fallback): ")
         return query if query.strip() else "None"
+    finally:
+        set_state(State.IDLE)
 
     try:
         print("Recognizing...")

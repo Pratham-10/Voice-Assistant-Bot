@@ -5,14 +5,13 @@ import requests
 from src.config import weather_apikey
 from src.tts import speak
 
-def weather_updates(city):
+def weather_updates(city: str) -> str:
     """
     Fetches the weather updates for a specified city from OpenWeatherMap.
-    Anounces weather conditions via Text-to-Speech.
+    Returns the weather information as a formatted string.
     """
     if not weather_apikey:
-        speak("Weather API key is not configured. Please set WEATHER_API_KEY in your .env file.")
-        return
+        return "Weather API key is not configured. Please set WEATHER_API_KEY in your .env file."
 
     base_url = "http://api.openweathermap.org/data/2.5/weather"
     params = {
@@ -30,18 +29,21 @@ def weather_updates(city):
         humidity = weather_data["main"]["humidity"]
         wind_speed = weather_data["wind"]["speed"]
 
-        speak(f"Weather in {city}:")
-        speak(f"Temperature: {temperature} degrees Celsius")
-        speak(f"Description: {description}")
-        speak(f"Humidity: {humidity}%")
-        speak(f"Wind Speed: {wind_speed} meters per second")
+        weather_info = (
+            f"Weather in {city}:\n"
+            f"- Temperature: {temperature}°C\n"
+            f"- Conditions: {description}\n"
+            f"- Humidity: {humidity}%\n"
+            f"- Wind Speed: {wind_speed} m/s"
+        )
+        return weather_info
 
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
-        speak("Sorry, I couldn't fetch the weather. Please check if the city name is correct or API key is valid.")
+        return f"Failed to fetch weather for {city}. Please check the city name or API key."
     except Exception as e:
         print(f"Error fetching weather: {e}")
-        speak("An error occurred while getting the weather updates.")
+        return f"An error occurred while getting the weather updates for {city}."
 
 def music_controls(command):
     """

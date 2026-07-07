@@ -1,6 +1,13 @@
-# API keys & Configuration
-config.py
+# API keys, Credentials & Sensitive Files
 .env
+credentials.json
+token.json
+.cache
+.cache-*
+
+# Local databases & logs
+*.db
+*.log
 
 # Virtual environment
 .venv/
@@ -15,6 +22,5 @@ __pycache__/
 # Operating System files
 .DS_Store
 Thumbs.db
-
 # Generated responses
 Openai/
